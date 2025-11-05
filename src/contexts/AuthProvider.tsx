@@ -8,7 +8,7 @@ import React, {
   ReactNode,
   useRef,
 } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
+import type { Session, User, SignInWithPasswordCredentials } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
 import { Empresa } from '@/services/company';
 import { bootstrapEmpresaParaUsuarioAtual } from '@/services/session';
@@ -20,6 +20,7 @@ type AuthContextType = {
   empresas: Empresa[];
   activeEmpresa: Empresa | null;
   signOut: () => Promise<void>;
+  signInWithPassword: (credentials: SignInWithPasswordCredentials) => Promise<void>;
   refreshEmpresas: () => Promise<void>;
   setActiveEmpresa: (empresa: Empresa) => Promise<void>;
 };
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    (async () => {
+    const fetchSession = async () => {
       console.log('[AUTH] getSession:init');
       const { data, error } = await supabase.auth.getSession();
       if (!mounted) return;
@@ -50,28 +51,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data?.session?.user ?? null);
       setLoading(false);
       console.log('[AUTH] getSession:done', { hasSession: !!data?.session });
-    })();
+    };
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      console.log('[AUTH] onAuthStateChange', { hasSession: !!newSession });
-      setSession(newSession ?? null);
+    fetchSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      console.log('[AUTH] onAuthStateChange', { event: _event, hasSession: !!newSession });
+      setSession(newSession);
       setUser(newSession?.user ?? null);
     });
 
     return () => {
       mounted = false;
-      sub?.subscription?.unsubscribe?.();
+      authListener?.subscription?.unsubscribe();
     };
   }, []);
 
   const refreshEmpresas = useCallback(async () => {
-    if (!user) return;
+    const currentUser = session?.user;
+    if (!currentUser) return;
   
     try {
       const { data: userEmpresas, error: userEmpresasError } = await supabase
         .from('empresa_usuarios')
         .select('empresa_id')
-        .eq('user_id', user.id);
+        .eq('user_id', currentUser.id);
   
       if (userEmpresasError) throw userEmpresasError;
   
@@ -94,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: activeEmpresaLink, error: activeError } = await supabase
         .from('user_active_empresa')
         .select('empresa_id')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .single();
   
       if (activeError && activeError.code !== 'PGRST116') {
@@ -106,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setActiveEmpresaState(active);
       } else if (empresasList && empresasList.length > 0) {
         setActiveEmpresaState(empresasList[0]);
-        await supabase.from('user_active_empresa').upsert({ user_id: user.id, empresa_id: empresasList[0].id });
+        await supabase.from('user_active_empresa').upsert({ user_id: currentUser.id, empresa_id: empresasList[0].id });
       } else {
         setActiveEmpresaState(null);
       }
@@ -115,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setEmpresas([]);
       setActiveEmpresaState(null);
     }
-  }, [user]);
+  }, [session]);
 
   useEffect(() => {
     if (session && !bootOnceRef.current) {
@@ -132,33 +136,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })();
     } else if (session) {
-        // If session exists but bootstrap has run, still refresh companies
-        // This handles cases like company data updates
         refreshEmpresas();
+    } else if (!session && !loading) {
+        // Clear company data on sign out
+        setEmpresas([]);
+        setActiveEmpresaState(null);
+        bootOnceRef.current = false;
     }
-  }, [session, refreshEmpresas]);
+  }, [session, loading, refreshEmpresas]);
 
   const setActiveEmpresa = useCallback(async (empresa: Empresa) => {
-    if (!user) return;
+    const currentUser = session?.user;
+    if (!currentUser) return;
     const { error } = await supabase
       .from('user_active_empresa')
-      .upsert({ user_id: user.id, empresa_id: empresa.id }, { onConflict: 'user_id' });
+      .upsert({ user_id: currentUser.id, empresa_id: empresa.id }, { onConflict: 'user_id' });
 
     if (error) {
       console.error('[AUTH][SET_ACTIVE_EMPRESA][ERR]', error);
     } else {
       setActiveEmpresaState(empresa);
     }
-  }, [user]);
+  }, [session]);
 
   const signOut = useCallback(async () => {
     console.log('[AUTH] signOut');
     await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setEmpresas([]);
-    setActiveEmpresaState(null);
-    bootOnceRef.current = false;
+  }, []);
+
+  const signInWithPassword = useCallback(async (credentials: SignInWithPasswordCredentials) => {
+    const { error } = await supabase.auth.signInWithPassword(credentials);
+    if (error) throw error;
   }, []);
 
   const value = useMemo<AuthContextType>(
@@ -169,10 +177,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       empresas,
       activeEmpresa,
       signOut,
+      signInWithPassword,
       refreshEmpresas,
       setActiveEmpresa,
     }),
-    [user, session, loading, empresas, activeEmpresa, signOut, refreshEmpresas, setActiveEmpresa],
+    [user, session, loading, empresas, activeEmpresa, signOut, signInWithPassword, refreshEmpresas, setActiveEmpresa],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

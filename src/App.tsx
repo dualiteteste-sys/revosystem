@@ -1,6 +1,6 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from './contexts/AuthProvider';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
+import ProtectedRoute from './components/layout/ProtectedRoute';
 import PendingVerificationPage from './pages/auth/PendingVerificationPage';
 import LandingPage from './pages/landing/LandingPage';
 import BillingSuccessPage from './pages/billing/SuccessPage';
@@ -13,32 +13,11 @@ import ProductsPage from './pages/products/ProductsPage';
 import PartnersPage from './pages/partners/PartnersPage';
 import CarriersPage from './pages/carriers/CarriersPage';
 import ServicesPage from './pages/services/ServicesPage';
-import OsPage from './pages/os/OsPage';
+import OsPage from './pages/os/OSPage';
 import AuthConfirmed from './pages/auth/Confirmed';
 import CepSearchPage from './pages/tools/CepSearchPage';
 import CnpjSearchPage from './pages/tools/CnpjSearchPage';
 import NfeInputPage from './pages/tools/NfeInputPage';
-
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { session, loading } = useAuth();
-  const location = useLocation();
-
-  // Show a global spinner only on the very first load when there's no session yet.
-  // This prevents the entire app from unmounting on subsequent background session checks.
-  if (loading && !session) {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return <Navigate to="/" state={{ from: location }} replace />;
-  }
-  
-  return children;
-};
 
 const App = () => {
   return (
@@ -51,7 +30,7 @@ const App = () => {
       <Route path="/auth/confirmed" element={<AuthConfirmed />} />
       
       <Route 
-        path="/app"
+        path="/app/*"
         element={
           <ProtectedRoute>
             <MainLayout />

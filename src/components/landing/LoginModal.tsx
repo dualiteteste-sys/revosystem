@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthProvider';
 
 interface LoginModalProps {
   onClose: () => void;
@@ -16,8 +16,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSignUpClick }) => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { signInWithPassword } = useAuth();
 
-  const from = location.state?.from?.pathname || '/app';
+  const from = (location.state as any)?.from?.pathname || '/app';
 
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
@@ -34,16 +35,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSignUpClick }) => {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
+    try {
+      await signInWithPassword({ email, password });
+      // A navegação será tratada pelo listener onAuthStateChange
+      // que detectará a nova sessão e o ProtectedRoute fará o resto.
       navigate(from, { replace: true });
+    } catch (err: any) {
+      setError(err.message || 'Falha no login. Verifique suas credenciais.');
+      setLoading(false);
     }
   };
 
