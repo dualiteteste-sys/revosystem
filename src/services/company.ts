@@ -79,16 +79,13 @@ export async function uploadCompanyLogo(empresaId: string, file: File): Promise<
 /**
  * Remove o logo da empresa do storage.
  */
-export async function deleteCompanyLogo(logoUrl: string): Promise<void> {
-    const url = new URL(logoUrl);
-    const path = url.pathname.split(`/${LOGO_BUCKET}/`)[1];
-
-    if (!path) {
-        console.warn("Could not extract path from logo URL:", logoUrl);
+export async function deleteCompanyLogo(logoPath: string): Promise<void> {
+    if (!logoPath) {
+        console.warn("deleteCompanyLogo called with empty path");
         return;
     }
 
-    const { error } = await supabase.storage.from(LOGO_BUCKET).remove([path]);
+    const { error } = await supabase.storage.from(LOGO_BUCKET).remove([logoPath]);
 
     if (error) {
         console.error('Error deleting logo:', error);

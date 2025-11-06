@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabasePublic } from '@/lib/supabasePublic';
+import { useSupabase } from '@/providers/SupabaseProvider';
 import { Database } from '@/types/database.types';
 import PricingCard from '@/components/billing/PricingCard';
 import { Loader2 } from 'lucide-react';
@@ -15,6 +15,7 @@ interface PricingProps {
 }
 
 const Pricing: React.FC<PricingProps> = ({ onSignUpClick }) => {
+  const supabase = useSupabase();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
@@ -25,7 +26,7 @@ const Pricing: React.FC<PricingProps> = ({ onSignUpClick }) => {
   useEffect(() => {
     const fetchPlans = async () => {
       setLoading(true);
-      const { data, error } = await supabasePublic
+      const { data, error } = await supabase
         .from('plans')
         .select('*')
         .eq('active', true)
@@ -40,7 +41,7 @@ const Pricing: React.FC<PricingProps> = ({ onSignUpClick }) => {
       setLoading(false);
     };
     fetchPlans();
-  }, [addToast]);
+  }, [addToast, supabase]);
 
   const handleStartTrial = (plan: Plan) => {
     if (session) {

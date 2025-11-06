@@ -48,7 +48,6 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners, onEdit, onDelet
             <SortableHeader column="nome" label="Nome" sortBy={sortBy} onSort={onSort} />
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">E-mail</th>
             <th scope="col" className="relative px-6 py-3"><span className="sr-only">Ações</span></th>
           </tr>
         </thead>
@@ -75,7 +74,6 @@ const PartnersTable: React.FC<PartnersTableProps> = ({ partners, onEdit, onDelet
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{partner.doc_unico || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{partner.email || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end gap-4">
                     <button onClick={() => onEdit(partner)} className="text-indigo-600 hover:text-indigo-900"><Edit size={18} /></button>

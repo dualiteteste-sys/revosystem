@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastProvider';
-import { supabase } from '@/lib/supabaseClient';
+import { useSupabase } from '@/providers/SupabaseProvider';
 import { useAuth } from '../../contexts/AuthProvider';
 
 type SuccessData = {
@@ -13,6 +13,7 @@ type SuccessData = {
 
 const SuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const supabase = useSupabase();
   const { session } = useAuth();
   const { addToast } = useToast();
   const [status, setStatus] = useState<'loading' | 'polling' | 'success' | 'error'>('loading');
@@ -62,7 +63,7 @@ const SuccessPage: React.FC = () => {
       fetchSessionData();
     }
 
-  }, [sessionId, session, pollCount, addToast, status]);
+  }, [sessionId, session, pollCount, addToast, status, supabase]);
 
   const renderContent = () => {
     switch (status) {

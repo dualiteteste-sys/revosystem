@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { useSupabase } from '@/providers/SupabaseProvider';
 import { useAuth } from '../contexts/AuthProvider';
 
 export interface FeatureFlags {
@@ -8,6 +8,7 @@ export interface FeatureFlags {
 }
 
 export const useFeatureFlags = (): FeatureFlags => {
+  const supabase = useSupabase();
   const { activeEmpresa } = useAuth();
   const [flags, setFlags] = useState<Omit<FeatureFlags, 'loading'>>({ revo_send_enabled: false });
   const [loading, setLoading] = useState(true);
@@ -33,7 +34,7 @@ export const useFeatureFlags = (): FeatureFlags => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     if (activeEmpresa?.id) {

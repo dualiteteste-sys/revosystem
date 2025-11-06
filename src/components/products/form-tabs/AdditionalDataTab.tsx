@@ -4,7 +4,7 @@ import Input from '../../ui/forms/Input';
 import TextArea from '../../ui/forms/TextArea';
 import Section from '../../ui/forms/Section';
 import { useAuth } from '../../../contexts/AuthProvider';
-import { supabase } from '@/lib/supabaseClient';
+import { useSupabase } from '@/providers/SupabaseProvider';
 
 interface AdditionalDataTabProps {
   data: ProductFormData;
@@ -22,6 +22,7 @@ const DisabledDisplay: React.FC<{label: string, value: string, placeholder: stri
 );
 
 const AdditionalDataTab: React.FC<AdditionalDataTabProps> = ({ data, onChange }) => {
+  const supabase = useSupabase();
   const { activeEmpresa } = useAuth();
   const [brandName, setBrandName] = useState('');
   const [measurementTableName, setMeasurementTableName] = useState('');
@@ -33,7 +34,7 @@ const AdditionalDataTab: React.FC<AdditionalDataTabProps> = ({ data, onChange })
       if (!activeEmpresa) return;
       setIsLoadingNames(true);
 
-      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
       // Brand
       if (data.marca_id && uuidRegex.test(data.marca_id)) {
@@ -63,7 +64,7 @@ const AdditionalDataTab: React.FC<AdditionalDataTabProps> = ({ data, onChange })
     };
 
     fetchRelatedNames();
-  }, [data.marca_id, data.tabela_medidas_id, data.produto_pai_id, activeEmpresa]);
+  }, [data.marca_id, data.tabela_medidas_id, data.produto_pai_id, activeEmpresa, supabase]);
 
   const handleBrandChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;

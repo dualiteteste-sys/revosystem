@@ -1,21 +1,25 @@
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "../types/database.types";
+import { createClient } from '@supabase/supabase-js';
+import { Database } from '../types/database.types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-const functionsUrl = import.meta.env.VITE_FUNCTIONS_BASE_URL as string;
+function readEnv() {
+  const vite = (typeof import.meta !== 'undefined' && import.meta?.env) || {};
+  const win = (typeof window !== 'undefined' && (window as any).__ENV__) || {};
+  const proc: any = typeof process !== 'undefined' ? process.env : {};
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("[AUTH] Variáveis VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY ausentes.");
+  const url = vite.VITE_SUPABASE_URL || win.VITE_SUPABASE_URL || proc.VITE_SUPABASE_URL;
+  const anon = vite.VITE_SUPABASE_ANON_KEY || win.VITE_SUPABASE_ANON_KEY || proc.VITE_SUPABASE_ANON_KEY;
+
+  return { url, anon };
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: false,
-  },
-  global: {
-    functionsUrl: functionsUrl,
-  },
-});
+const { url, anon } = readEnv();
+
+export const supabase = (url && anon)
+  ? createClient<Database>(url, anon, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+      },
+    })
+  : null;

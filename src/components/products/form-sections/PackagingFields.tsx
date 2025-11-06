@@ -6,6 +6,7 @@ import Select from '../../ui/forms/Select';
 import Input from '../../ui/forms/Input';
 import PackagingIllustration from '../PackagingIllustration';
 import { useNumericField } from '../../../hooks/useNumericField';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const tipoEmbalagemOptions: { value: tipo_embalagem; label: string }[] = [
     { value: 'pacote_caixa', label: 'Pacote / Caixa' },
@@ -19,15 +20,59 @@ interface PackagingFieldsProps {
   onChange: (field: keyof ProductFormData, value: any) => void;
 }
 
+const DimensionInput: React.FC<{
+    name: keyof ProductFormData;
+    label: string;
+    data: ProductFormData;
+    onChange: (field: keyof ProductFormData, value: any) => void;
+}> = ({ name, label, data, onChange }) => {
+    const numericProps = useNumericField(data[name] as number | null | undefined, (value) => onChange(name, value));
+    return (
+        <Input
+            label={label}
+            name={name as string}
+            type="text"
+            {...numericProps}
+            endAdornment="cm"
+            placeholder="0,0"
+        />
+    );
+};
+
 const PackagingFields: React.FC<PackagingFieldsProps> = ({ data, onChange }) => {
   const tipoEmbalagem = data.tipo_embalagem || 'pacote_caixa';
 
   const pesoLiquidoProps = useNumericField(data.peso_liquido_kg, (value) => onChange('peso_liquido_kg', value));
   const pesoBrutoProps = useNumericField(data.peso_bruto_kg, (value) => onChange('peso_bruto_kg', value));
-  const larguraProps = useNumericField(data.largura_cm, (value) => onChange('largura_cm', value));
-  const alturaProps = useNumericField(data.altura_cm, (value) => onChange('altura_cm', value));
-  const comprimentoProps = useNumericField(data.comprimento_cm, (value) => onChange('comprimento_cm', value));
-  const diametroProps = useNumericField(data.diametro_cm, (value) => onChange('diametro_cm', value));
+
+  const renderDimensionFields = () => {
+    switch (tipoEmbalagem) {
+      case 'pacote_caixa':
+        return (
+          <>
+            <DimensionInput name="largura_cm" label="Largura" data={data} onChange={onChange} />
+            <DimensionInput name="altura_cm" label="Altura" data={data} onChange={onChange} />
+            <DimensionInput name="comprimento_cm" label="Comprimento" data={data} onChange={onChange} />
+          </>
+        );
+      case 'envelope':
+        return (
+          <>
+            <DimensionInput name="largura_cm" label="Largura" data={data} onChange={onChange} />
+            <DimensionInput name="comprimento_cm" label="Comprimento" data={data} onChange={onChange} />
+          </>
+        );
+      case 'rolo_cilindro':
+        return (
+          <>
+            <DimensionInput name="comprimento_cm" label="Comprimento" data={data} onChange={onChange} />
+            <DimensionInput name="diametro_cm" label="Diâmetro" data={data} onChange={onChange} />
+          </>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <Section
@@ -41,7 +86,6 @@ const PackagingFields: React.FC<PackagingFieldsProps> = ({ data, onChange }) => 
             name="tipo_embalagem"
             value={tipoEmbalagem}
             onChange={(e) => onChange('tipo_embalagem', e.target.value)}
-            required
           >
             {tipoEmbalagemOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
           </Select>
@@ -82,47 +126,18 @@ const PackagingFields: React.FC<PackagingFieldsProps> = ({ data, onChange }) => 
             onChange={(e) => onChange('num_volumes', parseInt(e.target.value, 10) || 1)}
             placeholder="1"
           />
-
-          {(tipoEmbalagem === 'pacote_caixa' || tipoEmbalagem === 'envelope') && (
-            <Input
-              label="Largura"
-              name="largura_cm"
-              type="text"
-              {...larguraProps}
-              endAdornment="cm"
-              placeholder="0,0"
-            />
-          )}
-          {tipoEmbalagem === 'pacote_caixa' && (
-            <Input
-              label="Altura"
-              name="altura_cm"
-              type="text"
-              {...alturaProps}
-              endAdornment="cm"
-              placeholder="0,0"
-            />
-          )}
-          {(tipoEmbalagem === 'pacote_caixa' || tipoEmbalagem === 'envelope' || tipoEmbalagem === 'rolo_cilindro') && (
-            <Input
-              label="Comprimento"
-              name="comprimento_cm"
-              type="text"
-              {...comprimentoProps}
-              endAdornment="cm"
-              placeholder="0,0"
-            />
-          )}
-          {tipoEmbalagem === 'rolo_cilindro' && (
-            <Input
-              label="Diâmetro"
-              name="diametro_cm"
-              type="text"
-              {...diametroProps}
-              endAdornment="cm"
-              placeholder="0,0"
-            />
-          )}
+          <AnimatePresence mode="wait">
+            <motion.div
+                key={tipoEmbalagem}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="col-span-3 grid grid-cols-3 gap-4"
+            >
+                {renderDimensionFields()}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </Section>

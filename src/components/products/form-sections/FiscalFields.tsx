@@ -33,7 +33,6 @@ const FiscalFields: React.FC<FiscalFieldsProps> = ({ data, onChange }) => {
         name="icms_origem"
         value={data.icms_origem ?? 0}
         onChange={(e) => onChange('icms_origem', parseInt(e.target.value, 10))}
-        required
         className="sm:col-span-6"
       >
         {icmsOrigemOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}

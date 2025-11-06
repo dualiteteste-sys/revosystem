@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { UploadCloud, Loader2, Building2, Trash2 } from 'lucide-react';
 import { useToast } from '../../../contexts/ToastProvider';
@@ -7,18 +7,42 @@ import { useAuth } from '../../../contexts/AuthProvider';
 import LogoCropperModal from './LogoCropperModal';
 import { getCroppedImg } from '../../../lib/imageUtils';
 import { Area } from 'react-easy-crop/types';
+import { useSupabase } from '@/providers/SupabaseProvider';
+
+const LOGO_BUCKET = 'company_logos';
 
 interface LogoUploaderProps {
-  logoUrl: string | null;
-  onLogoChange: (newUrl: string | null) => void;
+  logoPath: string | null;
+  onLogoChange: (newPath: string | null) => void;
 }
 
-const LogoUploader: React.FC<LogoUploaderProps> = ({ logoUrl, onLogoChange }) => {
+const LogoUploader: React.FC<LogoUploaderProps> = ({ logoPath, onLogoChange }) => {
+  const supabase = useSupabase();
   const { activeEmpresa } = useAuth();
   const { addToast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [displayUrl, setDisplayUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (logoPath) {
+      const generateSignedUrl = async () => {
+        const { data, error } = await supabase.storage
+          .from(LOGO_BUCKET)
+          .createSignedUrl(logoPath, 3600); // 1 hour expiry
+        if (error) {
+          addToast('Não foi possível carregar o logo.', 'error');
+          setDisplayUrl(null);
+        } else {
+          setDisplayUrl(data.signedUrl);
+        }
+      };
+      generateSignedUrl();
+    } else {
+      setDisplayUrl(null);
+    }
+  }, [logoPath, addToast, supabase]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -42,18 +66,16 @@ const LogoUploader: React.FC<LogoUploaderProps> = ({ logoUrl, onLogoChange }) =>
         throw new Error('Não foi possível cortar a imagem.');
       }
 
-      if (logoUrl) {
+      if (logoPath) {
         try {
-          await deleteCompanyLogo(logoUrl);
+          await deleteCompanyLogo(logoPath);
         } catch (deleteError) {
           console.warn("Falha ao remover logo antigo, prosseguindo com o upload:", deleteError);
         }
       }
 
       const newLogoPath = await uploadCompanyLogo(activeEmpresa.id, croppedImageFile);
-      const publicUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/company_logos/${newLogoPath}`;
-      
-      onLogoChange(publicUrl);
+      onLogoChange(newLogoPath);
       addToast('Logo enviado com sucesso!', 'success');
     } catch (error: any) {
         const friendlyMessage = error.message.includes('Failed to fetch')
@@ -68,10 +90,10 @@ const LogoUploader: React.FC<LogoUploaderProps> = ({ logoUrl, onLogoChange }) =>
   };
 
   const handleDeleteLogo = async () => {
-    if (!logoUrl) return;
+    if (!logoPath) return;
 
     try {
-      await deleteCompanyLogo(logoUrl);
+      await deleteCompanyLogo(logoPath);
       onLogoChange(null);
       addToast('Logo removido.', 'info');
     } catch (error: any) {
@@ -98,8 +120,8 @@ const LogoUploader: React.FC<LogoUploaderProps> = ({ logoUrl, onLogoChange }) =>
           >
             <input {...getInputProps()} />
             
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo da empresa" className="w-full h-full object-cover rounded-full" />
+            {displayUrl ? (
+              <img src={displayUrl} alt="Logo da empresa" className="w-full h-full object-cover rounded-full" />
             ) : (
               <div className="text-center text-gray-500">
                 <Building2 className="mx-auto h-10 w-10" />
@@ -118,7 +140,7 @@ const LogoUploader: React.FC<LogoUploaderProps> = ({ logoUrl, onLogoChange }) =>
               <button type="button" {...getRootProps()} disabled={isUploading} className="text-sm text-blue-600 font-medium hover:underline disabled:opacity-50">
                   {isUploading ? 'Enviando...' : 'Trocar logo'}
               </button>
-              {logoUrl && (
+              {logoPath && (
                   <button type="button" onClick={handleDeleteLogo} className="flex items-center gap-1 text-sm text-red-600 font-medium hover:underline">
                       <Trash2 size={14} /> Remover
                   </button>

@@ -6,7 +6,6 @@ export type PartnerListItem = {
   nome: string;
   tipo: Database['public']['Enums']['pessoa_tipo'];
   doc_unico: string | null;
-  email: string | null;
   created_at: string;
   updated_at: string;
 };

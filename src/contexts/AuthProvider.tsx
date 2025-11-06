@@ -9,7 +9,7 @@ import React, {
   useRef,
 } from 'react';
 import type { Session, User, SignInWithPasswordCredentials } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabaseClient';
+import { useSupabase } from '@/providers/SupabaseProvider';
 import { Empresa } from '@/services/company';
 import { bootstrapEmpresaParaUsuarioAtual } from '@/services/session';
 
@@ -28,6 +28,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const supabase = useSupabase();
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const bootOnceRef = useRef(false);
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     const fetchSession = async () => {
@@ -65,9 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       authListener?.subscription?.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   const refreshEmpresas = useCallback(async () => {
+    if (!supabase) return;
     const currentUser = session?.user;
     if (!currentUser) return;
   
@@ -119,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setEmpresas([]);
       setActiveEmpresaState(null);
     }
-  }, [session]);
+  }, [session, supabase]);
 
   useEffect(() => {
     if (session && !bootOnceRef.current) {
@@ -146,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, loading, refreshEmpresas]);
 
   const setActiveEmpresa = useCallback(async (empresa: Empresa) => {
+    if (!supabase) return;
     const currentUser = session?.user;
     if (!currentUser) return;
     const { error } = await supabase
@@ -157,17 +165,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setActiveEmpresaState(empresa);
     }
-  }, [session]);
+  }, [session, supabase]);
 
   const signOut = useCallback(async () => {
+    if (!supabase) return;
     console.log('[AUTH] signOut');
     await supabase.auth.signOut();
-  }, []);
+  }, [supabase]);
 
   const signInWithPassword = useCallback(async (credentials: SignInWithPasswordCredentials) => {
+    if (!supabase) throw new Error("Supabase client not initialized.");
     const { error } = await supabase.auth.signInWithPassword(credentials);
     if (error) throw error;
-  }, []);
+  }, [supabase]);
 
   const value = useMemo<AuthContextType>(
     () => ({

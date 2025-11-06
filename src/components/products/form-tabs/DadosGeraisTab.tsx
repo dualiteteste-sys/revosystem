@@ -23,12 +23,17 @@ const statusProdutoOptions: { value: status_produto; label: string }[] = [
     { value: 'inativo', label: 'Inativo' },
 ];
 
+interface FormErrors {
+  nome?: string;
+}
+
 interface DadosGeraisTabProps {
   data: ProductFormData;
   onChange: (field: keyof ProductFormData, value: any) => void;
+  errors: FormErrors;
 }
 
-const DadosGeraisTab: React.FC<DadosGeraisTabProps> = ({ data, onChange }) => {
+const DadosGeraisTab: React.FC<DadosGeraisTabProps> = ({ data, onChange, errors }) => {
   const precoVendaProps = useNumericField(data.preco_venda, (value) => onChange('preco_venda', value));
   const estoqueMinProps = useNumericField(data.estoque_min, (value) => onChange('estoque_min', value));
   const estoqueMaxProps = useNumericField(data.estoque_max, (value) => onChange('estoque_max', value));
@@ -40,20 +45,20 @@ const DadosGeraisTab: React.FC<DadosGeraisTabProps> = ({ data, onChange }) => {
         description="Informações básicas para identificar seu produto."
       >
         <Input
-            label="Nome do Produto"
+            label={<>Nome do Produto <span className="text-red-500">*</span></>}
             name="nome"
             value={data.nome || ''}
             onChange={(e) => onChange('nome', e.target.value)}
             required
             className="sm:col-span-6"
             placeholder="Ex: Camiseta de Algodão Pima"
+            error={errors.nome}
         />
         <Input
             label="Unidade"
             name="unidade"
             value={data.unidade || 'un'}
             onChange={(e) => onChange('unidade', e.target.value)}
-            required
             className="sm:col-span-2"
             placeholder="Ex: un, kg, m, pç"
         />
@@ -62,7 +67,6 @@ const DadosGeraisTab: React.FC<DadosGeraisTabProps> = ({ data, onChange }) => {
             name="preco_venda"
             type="text"
             {...precoVendaProps}
-            required
             className="sm:col-span-2"
             placeholder="0,00"
             endAdornment="R$"
@@ -89,7 +93,6 @@ const DadosGeraisTab: React.FC<DadosGeraisTabProps> = ({ data, onChange }) => {
             name="status"
             value={data.status || 'ativo'}
             onChange={(e) => onChange('status', e.target.value)}
-            required
             className="sm:col-span-3"
         >
             {statusProdutoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
@@ -99,7 +102,6 @@ const DadosGeraisTab: React.FC<DadosGeraisTabProps> = ({ data, onChange }) => {
             name="tipo"
             value={data.tipo || 'simples'}
             onChange={(e) => onChange('tipo', e.target.value)}
-            required
             className="sm:col-span-3"
         >
             {tipoProdutoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}

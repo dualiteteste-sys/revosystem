@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, Loader2, Star, Trash2 } from 'lucide-react';
 import { uploadProductImage, removeProductImage, setPrincipalProductImage } from "@/lib/storage";
-import { supabase } from "@/lib/supabaseClient";
+import { useSupabase } from "@/providers/SupabaseProvider";
 import { useToast } from "@/contexts/ToastProvider";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
 
@@ -29,8 +29,10 @@ function assertUuid(id: string, label: string) {
 }
 
 export default function MediaTab({ produtoId, empresaId }: Props) {
+  const supabase = useSupabase();
   const { addToast } = useToast();
   const [imagens, setImagens] = useState<Imagem[]>([]);
+  const [signedImageUrls, setSignedImageUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
@@ -61,11 +63,31 @@ export default function MediaTab({ produtoId, empresaId }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [empresaId, produtoId, addToast]);
+  }, [empresaId, produtoId, addToast, supabase]);
 
   useEffect(() => {
     void loadImages();
   }, [loadImages]);
+
+  useEffect(() => {
+    const fetchSignedUrls = async () => {
+      const urls: Record<string, string> = {};
+      const urlPromises = imagens.map(async (img) => {
+        const { data, error } = await supabase.storage
+          .from('product_images')
+          .createSignedUrl(img.url, 3600); // 1 hour expiry
+        if (!error) {
+          urls[img.id] = data.signedUrl;
+        }
+      });
+      await Promise.all(urlPromises);
+      setSignedImageUrls(urls);
+    };
+
+    if (imagens.length > 0) {
+      fetchSignedUrls();
+    }
+  }, [imagens, supabase]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!acceptedFiles.length) return;
@@ -107,7 +129,7 @@ export default function MediaTab({ produtoId, empresaId }: Props) {
       setUploading(false);
       addToast("Uploads finalizados.", "success");
     }
-  }, [empresaId, produtoId, imagens, loadImages, addToast]);
+  }, [empresaId, produtoId, imagens, loadImages, addToast, supabase]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -186,7 +208,7 @@ export default function MediaTab({ produtoId, empresaId }: Props) {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             <AnimatePresence>
               {imagens.map((img) => {
-                const publicUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product_images/${img.url}`;
+                const imageUrl = signedImageUrls[img.id];
                 return (
                   <motion.div
                     key={img.id}
@@ -197,12 +219,18 @@ export default function MediaTab({ produtoId, empresaId }: Props) {
                     className={`relative group aspect-square rounded-xl overflow-hidden border-2
                       ${img.principal ? 'border-blue-500 shadow-lg' : 'border-transparent'}`}
                   >
-                    <img
-                      src={publicUrl}
-                      alt={`Imagem do produto ${produtoId}`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={`Imagem do produto ${produtoId}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <Loader2 className="animate-spin text-gray-500" />
+                      </div>
+                    )}
                     {img.principal && (
                       <div className="absolute top-2 right-2 bg-blue-500 text-white p-1.5 rounded-full shadow-md">
                         <Star size={14} fill="white" />

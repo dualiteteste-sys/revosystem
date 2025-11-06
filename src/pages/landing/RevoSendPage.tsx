@@ -6,7 +6,7 @@ import Footer from '../../components/landing/Footer';
 import SignUpModal from '../../components/landing/SignUpModal';
 import LoginModal from '../../components/landing/LoginModal';
 import { AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/supabaseClient';
+import { useSupabase } from '@/providers/SupabaseProvider';
 import { Database } from '../../types/database.types';
 import { useAuth } from '../../contexts/AuthProvider';
 import { useToast } from '../../contexts/ToastProvider';
@@ -15,6 +15,7 @@ import { OnboardingIntent } from '@/types/onboarding';
 type Addon = Database['public']['Tables']['addons']['Row'];
 
 const RevoSendPage: React.FC = () => {
+  const supabase = useSupabase();
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [addons, setAddons] = useState<Addon[]>([]);
@@ -41,7 +42,7 @@ const RevoSendPage: React.FC = () => {
       setLoading(false);
     };
     fetchAddons();
-  }, [addToast]);
+  }, [addToast, supabase]);
 
   const openLoginModal = () => {
     setIsSignUpModalOpen(false);

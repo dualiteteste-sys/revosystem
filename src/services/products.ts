@@ -1,12 +1,15 @@
 import { supabase } from '@/lib/supabaseClient';
 import { callRpc } from '@/lib/api';
 import { Database } from '@/types/database.types';
+import { normalizeProductPayload } from './products.normalize';
+import { validatePackaging } from './products.validate';
 
 // Type for the product list, now derived from the RPC's return type.
 export type Product = {
   id: string;
   nome: string | null;
   sku: string | null;
+  slug: string | null;
   status: "ativo" | "inativo" | null;
   preco_venda: number | null;
   unidade: string | null;
@@ -86,11 +89,18 @@ export async function getProductDetails(id: string): Promise<FullProduct | null>
  * Creates or updates a product using the secure RPCs.
  */
 export async function saveProduct(productData: ProductPayload, empresaId: string): Promise<FullProduct> {
-  const payload = { ...productData, empresa_id: empresaId };
+  const normalizedPayload = normalizeProductPayload({ ...productData, empresa_id: empresaId });
+  
+  const validationErrors = validatePackaging(normalizedPayload);
+  if (validationErrors.length > 0) {
+    const error = new Error(`[VALIDATION] ${validationErrors.join(' | ')}`);
+    (error as any).code = 'CLIENT_VALIDATION';
+    throw error;
+  }
 
   try {
-    if (payload.id) {
-      const { id, ...patch } = payload;
+    if (normalizedPayload.id) {
+      const { id, ...patch } = normalizedPayload;
       const data = await callRpc<FullProduct>('update_product_for_current_user', {
         p_id: id,
         patch: patch as any,
@@ -98,7 +108,7 @@ export async function saveProduct(productData: ProductPayload, empresaId: string
       return data;
     } else {
       const data = await callRpc<FullProduct>('create_product_for_current_user', {
-        payload: payload as any,
+        payload: normalizedPayload as any,
       });
       return data;
     }

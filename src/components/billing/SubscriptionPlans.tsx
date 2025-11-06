@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { useSupabase } from '@/providers/SupabaseProvider';
 import { Database } from '../../types/database.types';
 import PricingCard from './PricingCard';
 import { Loader2 } from 'lucide-react';
@@ -9,6 +9,7 @@ import { useToast } from '../../contexts/ToastProvider';
 type Plan = Database['public']['Tables']['plans']['Row'];
 
 const SubscriptionPlans: React.FC = () => {
+  const supabase = useSupabase();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
@@ -34,7 +35,7 @@ const SubscriptionPlans: React.FC = () => {
       setLoading(false);
     };
     fetchPlans();
-  }, [addToast]);
+  }, [addToast, supabase]);
 
   const handleCheckout = async (plan: Plan) => {
     if (!session || !activeEmpresa) {

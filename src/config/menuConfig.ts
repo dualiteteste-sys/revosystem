@@ -4,7 +4,7 @@ import {
   Users2, Plug, UserSquare, Box, BarChart2, FileDown, ClipboardList,
   FileSignature, HeartHandshake, Store, Receipt, Truck, Percent,
   Bot, Undo2, ClipboardCheck, Banknote, Wallet, TrendingUp,
-  TrendingDown, Landmark, FileSpreadsheet, LogOut, Search, Building
+  TrendingDown, Landmark, FileSpreadsheet, LogOut, Search, Building, Code
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -106,6 +106,15 @@ export const menuConfig: { name: string; icon: React.ElementType; href: string; 
     children: [
       { name: 'Consulta CEP', icon: Search, href: '/app/cep-search' },
       { name: 'Consulta CNPJ', icon: Building, href: '/app/cnpj-search' },
+    ],
+  },
+  {
+    name: 'Desenvolvedor',
+    icon: Code,
+    href: '#',
+    gradient: 'from-purple-500 to-purple-600',
+    children: [
+      { name: 'Logs', icon: FileText, href: '/app/desenvolvedor/logs' },
     ],
   },
   {

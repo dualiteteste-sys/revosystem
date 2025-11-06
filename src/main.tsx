@@ -5,6 +5,7 @@ import "./index.css";
 import { BrowserRouter } from "react-router-dom";
 import { ToastProvider } from "./contexts/ToastProvider";
 import { AuthProvider } from "./contexts/AuthProvider";
+import { SupabaseProvider } from "./providers/SupabaseProvider";
 
 const root = document.getElementById("root")!;
 
@@ -12,9 +13,11 @@ ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <BrowserRouter>
       <ToastProvider>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <SupabaseProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </SupabaseProvider>
       </ToastProvider>
     </BrowserRouter>
   </React.StrictMode>

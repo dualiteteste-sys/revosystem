@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabaseClient';
+import { useSupabase } from '@/providers/SupabaseProvider';
 import { Loader2 } from 'lucide-react';
 
 function parseHashParams(hash: string): Record<string, string> {
@@ -13,6 +13,7 @@ function parseHashParams(hash: string): Record<string, string> {
 
 export default function AuthConfirmed() {
   const navigate = useNavigate();
+  const supabase = useSupabase();
 
   useEffect(() => {
     (async () => {
@@ -36,7 +37,7 @@ export default function AuthConfirmed() {
         navigate('/app', { replace: true });
       }
     })();
-  }, [navigate]);
+  }, [navigate, supabase]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { useSupabase } from '@/providers/SupabaseProvider';
 
 /**
  * Garante empresa ativa para o usuário autenticado.
@@ -11,6 +11,7 @@ export function useEnsureEmpresaAtiva(
   nomeEmpresa?: string,
   fantasiaEmpresa?: string
 ) {
+  const supabase = useSupabase();
   const ran = useRef(false);
 
   useEffect(() => {
@@ -42,5 +43,5 @@ export function useEnsureEmpresaAtiva(
         console.warn('[RPC] bootstrap retornou sem empresa_id.');
       }
     })();
-  }, [nomeEmpresa, fantasiaEmpresa]);
+  }, [nomeEmpresa, fantasiaEmpresa, supabase]);
 }

@@ -18,6 +18,7 @@ import AuthConfirmed from './pages/auth/Confirmed';
 import CepSearchPage from './pages/tools/CepSearchPage';
 import CnpjSearchPage from './pages/tools/CnpjSearchPage';
 import NfeInputPage from './pages/tools/NfeInputPage';
+import LogsPage from './pages/dev/LogsPage';
 
 const App = () => {
   return (
@@ -48,6 +49,7 @@ const App = () => {
         <Route path="cep-search" element={<CepSearchPage />} />
         <Route path="cnpj-search" element={<CnpjSearchPage />} />
         <Route path="nfe-input" element={<NfeInputPage />} />
+        <Route path="desenvolvedor/logs" element={<LogsPage />} />
         
         <Route path="billing/success" element={<BillingSuccessPage />} />
         <Route path="billing/cancel" element={<BillingCancelPage />} />

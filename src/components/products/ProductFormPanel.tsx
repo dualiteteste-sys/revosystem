@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AlertTriangle, Loader2, Save } from 'lucide-react';
 import { Database } from '../../types/database.types';
 import { useToast } from '../../contexts/ToastProvider';
@@ -7,8 +7,14 @@ import AdditionalDataTab from './form-tabs/AdditionalDataTab';
 import MediaTab from './form-tabs/MediaTab';
 import SeoTab from './form-tabs/SeoTab';
 import OthersTab from './form-tabs/OthersTab';
+import { normalizeProductPayload } from '@/services/products.normalize';
+import { validatePackaging } from '@/services/products.validate';
 
 export type ProductFormData = Partial<Database['public']['Tables']['produtos']['Row']>;
+
+interface FormErrors {
+  nome?: string;
+}
 
 interface ProductFormPanelProps {
   product: ProductFormData | null;
@@ -24,6 +30,7 @@ const ProductFormPanel: React.FC<ProductFormPanelProps> = ({ product, onSaveSucc
   const [formData, setFormData] = useState<ProductFormData>({});
   const [activeTab, setActiveTab] = useState(tabs[0]);
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     if (product) {
@@ -36,27 +43,44 @@ const ProductFormPanel: React.FC<ProductFormPanelProps> = ({ product, onSaveSucc
         preco_venda: 0,
         moeda: 'BRL',
         icms_origem: 0,
-        tipo_embalagem: 'pacote_caixa',
+        tipo_embalagem: 'outro',
         controla_estoque: true,
-        controlar_lotes: false,
         permitir_inclusao_vendas: true,
+        controlar_lotes: false,
       });
     }
   }, [product]);
+
+  useEffect(() => {
+    const newErrors: FormErrors = {};
+    if (!formData.nome || formData.nome.trim() === '') {
+      newErrors.nome = 'O nome do produto é obrigatório.';
+    }
+    setErrors(newErrors);
+  }, [formData.nome]);
+
+  const isSaveDisabled = useMemo(() => {
+    if (isSaving) return true;
+    // A validação em tempo real agora checa apenas os erros principais (nome).
+    return Object.keys(errors).length > 0;
+  }, [isSaving, errors]);
 
   const handleFormChange = (field: keyof ProductFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
-    if (!formData.nome) {
-      addToast('O nome do produto é obrigatório.', 'error');
+    if (Object.keys(errors).length > 0) {
+      addToast('Por favor, corrija os erros no formulário.', 'warning');
       setActiveTab('Dados Gerais');
       return;
     }
 
-    if (formData.ncm && formData.ncm.replace(/\D/g, '').length !== 8) {
-      addToast('O NCM informado é inválido. O formato deve ser 0000.00.00.', 'error');
+    const normalizedForSubmit = normalizeProductPayload(formData);
+    const finalValidationErrors = validatePackaging(normalizedForSubmit);
+
+    if (finalValidationErrors.length > 0) {
+      addToast(`Dados de embalagem inválidos: ${finalValidationErrors.join(', ')}`, 'warning');
       setActiveTab('Dados Gerais');
       return;
     }
@@ -69,7 +93,12 @@ const ProductFormPanel: React.FC<ProductFormPanelProps> = ({ product, onSaveSucc
       onSaveSuccess(savedProduct);
     } catch (error: any) {
       console.error(error);
-      addToast(error.message || 'Erro ao salvar o produto', 'error');
+      if (error.code === 'CLIENT_VALIDATION') {
+        addToast(error.message.replace('[VALIDATION] ', ''), 'warning');
+        setActiveTab('Dados Gerais');
+      } else {
+        addToast(error.message || 'Erro ao salvar o produto', 'error');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -78,7 +107,7 @@ const ProductFormPanel: React.FC<ProductFormPanelProps> = ({ product, onSaveSucc
   const renderTabContent = () => {
     switch (activeTab) {
       case 'Dados Gerais':
-        return <DadosGeraisTab data={formData} onChange={handleFormChange} />;
+        return <DadosGeraisTab data={formData} onChange={handleFormChange} errors={errors} />;
       case 'Outros':
         return <OthersTab data={formData} onChange={handleFormChange} />;
       case 'Dados Complementares':
@@ -136,8 +165,8 @@ const ProductFormPanel: React.FC<ProductFormPanelProps> = ({ product, onSaveSucc
           </button>
           <button
             onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            disabled={isSaveDisabled}
+            className="flex items-center gap-2 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
             Salvar Produto

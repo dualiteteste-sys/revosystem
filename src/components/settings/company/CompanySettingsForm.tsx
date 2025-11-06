@@ -44,8 +44,8 @@ const CompanySettingsForm: React.FC = () => {
     setFormData(prev => (prev ? { ...prev, [name]: maskedValue } : null));
   };
   
-  const handleLogoChange = (newUrl: string | null) => {
-    setFormData(prev => (prev ? { ...prev, logotipo_url: newUrl } : null));
+  const handleLogoChange = (newPath: string | null) => {
+    setFormData(prev => (prev ? { ...prev, logotipo_url: newPath } : null));
   };
 
   const handleFetchCnpjData = async () => {
@@ -136,7 +136,7 @@ const CompanySettingsForm: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
           {/* Coluna Esquerda */}
           <div className="space-y-6">
-            <LogoUploader logoUrl={formData.logotipo_url || null} onLogoChange={handleLogoChange} />
+            <LogoUploader logoPath={formData.logotipo_url || null} onLogoChange={handleLogoChange} />
             <InputField label="Razão Social" name="razao_social" value={formData.razao_social || ''} onChange={handleChange} required />
             <InputField label="Nome Fantasia" name="fantasia" value={formData.fantasia || ''} onChange={handleChange} />
             

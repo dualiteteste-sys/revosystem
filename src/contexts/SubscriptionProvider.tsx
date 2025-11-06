@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { useSupabase } from '@/providers/SupabaseProvider';
 import { useAuth } from './AuthProvider';
 import { Database } from '../types/database.types';
 
@@ -19,6 +19,7 @@ interface SubscriptionContextType {
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
 export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
+  const supabase = useSupabase();
   const { activeEmpresa } = useAuth();
   const [subscription, setSubscription] = useState<SubscriptionWithPlan | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
@@ -59,7 +60,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoadingSubscription(false);
     }
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     if (activeEmpresa?.id) {

@@ -4,7 +4,7 @@ import { useSubscription } from '../../../contexts/SubscriptionProvider';
 import { Loader2, Sparkles, AlertTriangle, CheckCircle, RefreshCw, ServerOff, CreditCard, PlusCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '../../../contexts/ToastProvider';
-import { supabase } from '@/lib/supabaseClient';
+import { useSupabase } from '@/providers/SupabaseProvider';
 import { Database } from '../../../types/database.types';
 
 type EmpresaAddon = Database['public']['Tables']['empresa_addons']['Row'];
@@ -67,6 +67,7 @@ const badgeColors: { [key: string]: string } = {
 };
 
 const SubscriptionSettings: React.FC<SubscriptionSettingsProps> = ({ onSwitchToPlans }) => {
+  const supabase = useSupabase();
   const { session, activeEmpresa } = useAuth();
   const { subscription, loadingSubscription, refetchSubscription } = useSubscription();
   const { addToast } = useToast();
@@ -88,7 +89,7 @@ const SubscriptionSettings: React.FC<SubscriptionSettingsProps> = ({ onSwitchToP
         setAddons(data);
     }
     setLoadingAddons(false);
-  }, [activeEmpresa, addToast]);
+  }, [activeEmpresa, addToast, supabase]);
 
   useEffect(() => {
     fetchAddons();
