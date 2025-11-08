@@ -1,25 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types/database.types';
 
-function readEnv() {
-  const vite = (typeof import.meta !== 'undefined' && import.meta?.env) || {};
-  const win = (typeof window !== 'undefined' && (window as any).__ENV__) || {};
-  const proc: any = typeof process !== 'undefined' ? process.env : {};
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-  const url = vite.VITE_SUPABASE_URL || win.VITE_SUPABASE_URL || proc.VITE_SUPABASE_URL;
-  const anon = vite.VITE_SUPABASE_ANON_KEY || win.VITE_SUPABASE_ANON_KEY || proc.VITE_SUPABASE_ANON_KEY;
-
-  return { url, anon };
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase URL and Anon Key must be provided in environment variables.');
 }
 
-const { url, anon } = readEnv();
-
-export const supabase = (url && anon)
-  ? createClient<Database>(url, anon, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: false,
-      },
-    })
-  : null;
+/**
+ * Singleton Supabase client instance.
+ */
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+  },
+});

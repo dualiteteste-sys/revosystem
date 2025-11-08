@@ -14,12 +14,14 @@ export type AuditEvent = {
   meta: Record<string, unknown> | null;
 };
 
+// This type represents the state of the filters in the UI.
+// The 'ALL' value is a UI concept and will be normalized to `null` before the API call.
 export type LogsFilters = {
   from?: Date | null;
   to?: Date | null;
-  source?: string[];
+  source?: (string | 'ALL')[];
   table?: string[];
-  op?: ('INSERT' | 'UPDATE' | 'DELETE' | 'SELECT')[];
+  op?: ('INSERT' | 'UPDATE' | 'DELETE' | 'SELECT' | 'ALL')[];
   q?: string;
   limit?: number;
 };

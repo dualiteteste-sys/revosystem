@@ -7,6 +7,33 @@
 --  - Em chamadas via PostgREST/Frontend autenticadas, irão resolver corretamente.
 -- =============================================================================
 
+/*
+          # [Operation Name]
+          Atualização das Funções de Contexto de Usuário e Empresa
+
+          ## Query Description: [Esta operação substitui as funções `current_user_id()` e `current_empresa_id()` para garantir a correta identificação do usuário e sua empresa ativa a partir do token JWT. A mudança principal adiciona um fallback para ler o `sub` do JWT em diferentes formatos, resolvendo um problema de compatibilidade com o PostgREST. Também cria um índice para otimizar a busca da empresa ativa. Esta alteração não afeta dados existentes e é segura de ser aplicada.]
+          
+          ## Metadata:
+          - Schema-Category: "Structural"
+          - Impact-Level: "Low"
+          - Requires-Backup: false
+          - Reversible: true
+          
+          ## Structure Details:
+          - Functions Modified: `public.current_user_id()`, `public.current_empresa_id()`
+          - Indexes Added: `idx_user_active_empresa__user_updated_at` on `public.user_active_empresa`
+          
+          ## Security Implications:
+          - RLS Status: Aprimorado
+          - Policy Changes: Não
+          - Auth Requirements: A correção melhora a aplicação de RLS que dependem destas funções.
+          
+          ## Performance Impact:
+          - Indexes: Adiciona um índice para otimizar a busca da empresa ativa, melhorando a performance de queries que dependem de `current_empresa_id()`.
+          - Triggers: Nenhum
+          - Estimated Impact: Positivo. A resolução de contexto será mais rápida e confiável.
+          */
+
 -- 1) current_user_id(): lê sub do JWT em dois formatos suportados pelo PostgREST
 CREATE OR REPLACE FUNCTION public.current_user_id()
 RETURNS uuid
@@ -23,7 +50,7 @@ BEGIN
     v_sub_text := NULLIF(current_setting('request.jwt.claim.sub', true), '');
   EXCEPTION WHEN OTHERS THEN
     v_sub_text := NULL;
-  END IF;
+  END;
 
   IF v_sub_text IS NOT NULL THEN
     RETURN v_sub_text::uuid;
@@ -34,7 +61,7 @@ BEGIN
     v_claims := NULLIF(current_setting('request.jwt.claims', true), '')::json;
   EXCEPTION WHEN OTHERS THEN
     v_claims := NULL;
-  END IF;
+  END;
 
   IF v_claims ? 'sub' THEN
     RETURN (v_claims->>'sub')::uuid;

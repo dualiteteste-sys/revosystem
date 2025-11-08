@@ -19,12 +19,19 @@ function mapFiltersToParams(filters: LogsFilters, after: string | null) {
   const p_to    = filters.to   ? filters.to.toISOString()   : undefined;
   const p_limit = filters.limit ?? DEFAULT_LIMIT;
 
+  const normalizeMultiSelect = (values?: (string | 'ALL')[] | null) => {
+    if (!values || values.length === 0 || values.includes('ALL')) {
+      return null;
+    }
+    return values.filter(v => v !== 'ALL');
+  };
+
   return {
     p_from,
     p_to,
-    p_source: filters.source?.length ? filters.source : null,
-    p_table : filters.table?.length  ? filters.table  : null,
-    p_op    : filters.op?.length     ? filters.op     : null,
+    p_source: normalizeMultiSelect(filters.source),
+    p_table : normalizeMultiSelect(filters.table),
+    p_op    : normalizeMultiSelect(filters.op as string[]),
     p_q     : filters.q?.trim() ? filters.q.trim().slice(0, 256) : null,
     p_after : after,
     p_limit : p_limit,
@@ -121,7 +128,7 @@ export function useLogsQuery(initialFilters: LogsFilters = {}) {
       }
 
       const newRows = (data ?? []) as AuditEvent[];
-      const nextCursor = newRows.length === params.p_limit ? newRows[newRows.length - 1]?.occurred_at : null;
+      const nextCursor = newRows.length === params.p_limit ? newRows.length > 0 ? newRows[newRows.length - 1]?.occurred_at : null : null;
 
       setState(s => ({
         ...s,

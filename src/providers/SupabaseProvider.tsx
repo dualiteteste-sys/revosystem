@@ -3,7 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
 import { Database } from '@/types/database.types';
 
-const SupabaseContext = createContext<SupabaseClient<Database> | null>(null);
+const SupabaseContext = createContext<SupabaseClient<Database> | undefined>(undefined);
 
 export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   return (
@@ -13,10 +13,14 @@ export const SupabaseProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+/**
+ * Custom hook to access the Supabase client instance.
+ * Throws an error if used outside of a SupabaseProvider.
+ */
 export const useSupabase = () => {
   const context = useContext(SupabaseContext);
-  // Não lançar erro aqui permite que a aplicação tenha um modo de demonstração
-  // quando o cliente não pode ser inicializado.
-  // Componentes que dependem criticamente do Supabase devem verificar o valor.
+  if (context === undefined) {
+    throw new Error('useSupabase must be used within a SupabaseProvider');
+  }
   return context;
 };

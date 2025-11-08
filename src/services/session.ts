@@ -9,12 +9,12 @@ import { callRpc } from "@/lib/api";
  * Observação: Deve ser chamada APÓS o usuário estar autenticado.
  */
 export async function bootstrapEmpresaParaUsuarioAtual(opts?: {
-  nome?: string | null;
+  razao_social?: string | null;
   fantasia?: string | null;
 }): Promise<{ empresa_id: string; status: string }> {
   try {
     const data = await callRpc<{ empresa_id: string; status: string }[]>("bootstrap_empresa_for_current_user", {
-        p_nome: opts?.nome ?? null,
+        p_razao_social: opts?.razao_social ?? null,
         p_fantasia: opts?.fantasia ?? null,
     });
 

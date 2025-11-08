@@ -11,6 +11,21 @@ interface LogsTableProps {
 }
 
 const MemoizedLogsTable: React.FC<LogsTableProps> = ({ events, onShowDetails, onLoadMore, hasMore, isLoadingMore }) => {
+  
+  const renderPkSummary = (pk: Record<string, unknown> | null): string => {
+    if (!pk) return '-';
+    if (typeof pk.id === 'string' && pk.id) {
+      return pk.id;
+    }
+    const keys = Object.keys(pk);
+    if (keys.length > 0) {
+      const firstKey = keys[0];
+      const firstValue = pk[firstKey];
+      return `${firstKey}: ${String(firstValue)}`;
+    }
+    return JSON.stringify(pk);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="overflow-x-auto">
@@ -34,8 +49,11 @@ const MemoizedLogsTable: React.FC<LogsTableProps> = ({ events, onShowDetails, on
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{event.op}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{event.table_name || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{event.actor_email || 'Sistema'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-xs">
-                  {event.pk?.id ? String(event.pk.id) : (event.pk ? JSON.stringify(event.pk).slice(0, 60) + '...' : '-')}
+                <td 
+                  className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-xs"
+                  title={event.pk ? JSON.stringify(event.pk) : ''}
+                >
+                  {renderPkSummary(event.pk)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button onClick={() => onShowDetails(event)} className="text-blue-600 hover:text-blue-900">

@@ -1,100 +1,131 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, X } from 'lucide-react';
+import * as React from "react";
+import { ChevronsUpDown, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandGroup,
+  CommandEmpty,
+  CommandItem,
+} from "@/components/ui/command";
 
-interface MultiSelectProps {
+type Option = { label: string; value: string };
+
+type MultiSelectProps = {
   label: string;
-  options: { value: string; label: string }[];
+  options: Option[];
   selected: string[];
-  onChange: (selected: string[]) => void;
+  onChange: (next: string[]) => void;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  emptyLabel?: string;
   className?: string;
-}
-
-const MultiSelect: React.FC<MultiSelectProps> = ({ label, options, selected, onChange, className }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const toggleOption = (value: string) => {
-    if (selected.includes(value)) {
-      onChange(selected.filter(item => item !== value));
-    } else {
-      onChange([...selected, value]);
-    }
-  };
-
-  const removeOption = (value: string) => {
-    onChange(selected.filter(item => item !== value));
-  };
-
-  return (
-    <div className={`relative ${className}`}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full p-2 pr-10 bg-white/80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm text-left flex flex-wrap gap-1 items-center min-h-[42px]"
-        >
-          {selected.length === 0 ? (
-            <span className="text-gray-500">Selecionar...</span>
-          ) : (
-            selected.map(value => (
-              <span key={value} className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
-                {options.find(o => o.value === value)?.label || value}
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); removeOption(value); }}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  <X size={12} />
-                </button>
-              </span>
-            ))
-          )}
-        </button>
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
-          <ChevronDown size={20} />
-        </div>
-      </div>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-60 overflow-auto"
-          >
-            {options.map(option => (
-              <div
-                key={option.value}
-                onClick={() => toggleOption(option.value)}
-                className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-blue-50"
-              >
-                <span>{option.label}</span>
-                <input
-                  type="checkbox"
-                  checked={selected.includes(option.value)}
-                  readOnly
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-            ))}
-            {options.length === 0 && <div className="px-4 py-2 text-sm text-gray-500">Nenhuma opção disponível</div>}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
+  disabled?: boolean;
 };
 
-export default MultiSelect;
+export default function MultiSelect({
+  options,
+  selected: value,
+  onChange,
+  label,
+  placeholder = "Selecionar...",
+  searchPlaceholder = "Buscar…",
+  emptyLabel = "Nenhum item",
+  className,
+  disabled,
+}: MultiSelectProps) {
+  const [open, setOpen] = React.useState(false);
+  const selected = React.useMemo(
+    () => new Set(value ?? []),
+    [value]
+  );
+
+  function toggle(val: string) {
+    const next = new Set(selected);
+    if (next.has(val)) next.delete(val);
+    else next.add(val);
+    onChange(Array.from(next));
+  }
+
+  const triggerLabel =
+    value?.length
+      ? options
+          .filter(o => selected.has(o.value))
+          .map(o => o.label)
+          .join(", ")
+      : placeholder;
+
+  return (
+    <div className={className}>
+        {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+        <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+            <Button
+            type="button"
+            variant="outline"
+            className={cn("w-full justify-between", !value?.length && "text-muted-foreground")}
+            disabled={disabled}
+            >
+            <span className="truncate">
+                {triggerLabel}
+            </span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+        </PopoverTrigger>
+
+        <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
+            <Command shouldFilter>
+            <CommandInput placeholder={searchPlaceholder} />
+            <CommandList role="listbox" aria-multiselectable="true">
+                <CommandEmpty>{emptyLabel}</CommandEmpty>
+                <CommandGroup>
+                {options.map((opt) => {
+                    const isSelected = selected.has(opt.value);
+                    return (
+                    <CommandItem
+                        key={opt.value}
+                        value={opt.label}
+                        onSelect={() => {}}
+                        className="px-2 py-1.5"
+                        role="option"
+                        aria-selected={isSelected}
+                        asChild
+                    >
+                        <label className="flex items-center gap-2 cursor-pointer w-full">
+                        <input
+                            type="checkbox"
+                            className="peer sr-only"
+                            checked={isSelected}
+                            onChange={() => toggle(opt.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                        />
+                        <span
+                            aria-hidden
+                            className={cn(
+                            "h-4 w-4 rounded border flex items-center justify-center",
+                            isSelected ? "bg-primary text-primary-foreground" : ""
+                            )}
+                        >
+                            {isSelected ? <Check className="h-3 w-3" /> : null}
+                        </span>
+                        <span className="text-sm">{opt.label}</span>
+                        </label>
+                    </CommandItem>
+                    );
+                })}
+                </CommandGroup>
+            </CommandList>
+            </Command>
+        </PopoverContent>
+        </Popover>
+    </div>
+  );
+}

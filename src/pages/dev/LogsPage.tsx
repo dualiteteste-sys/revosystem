@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSupabase } from '@/providers/SupabaseProvider';
 import { useLogsQuery } from '@/features/dev-logs/hooks/useLogsQuery';
 import { LogsFilters as FiltersType, AuditEvent } from '@/features/dev-logs/types';
-import { LogsFilters } from '@/features/dev-logs/LogsFilters';
+import LogsFilters from '@/features/dev-logs/LogsFilters';
 import LogsTable from '@/features/dev-logs/LogsTable';
 import LogDiffDialog from '@/features/dev-logs/LogDiffDialog';
 import { Loader2, ListChecks } from 'lucide-react';
@@ -19,9 +19,9 @@ const daysAgo = (d: number) => {
 const DEFAULT_FILTERS: FiltersType = {
   from: daysAgo(30),
   to: now(),
-  source: undefined,
-  table: undefined,
-  op: undefined,
+  source: ['ALL'],
+  table: [],
+  op: ['ALL'],
   q: '',
   limit: 50,
 };
@@ -33,18 +33,17 @@ export default function LogsPage() {
   const supabase = useSupabase();
   const { addToast } = useToast();
 
-  const { data, isLoading, isError, errorMsg, isLoadingMore, hasMore, fetchFirstPage, loadMore, setFilters: setHookFilters } =
+  const { data, isLoading, isError, errorMsg, isLoadingMore, hasMore, fetchFirstPage, setFilters: setHookFilters } =
     useLogsQuery(filters);
 
-  const periodInvalid = useMemo(() => {
-    if (!pendingFilters.from || !pendingFilters.to) return false;
-    return pendingFilters.from.getTime() > pendingFilters.to.getTime();
-  }, [pendingFilters.from, pendingFilters.to]);
-
   const onSubmitFilters = () => {
-    if (periodInvalid) return;
     setFilters(pendingFilters);
   };
+
+  const onClearFilters = () => {
+    setPendingFilters(DEFAULT_FILTERS);
+    setFilters(DEFAULT_FILTERS);
+  }
 
   useEffect(() => {
     setHookFilters(filters);
@@ -57,9 +56,9 @@ export default function LogsPage() {
     }
   }, [isError, errorMsg, addToast]);
 
-  const tableNames = useMemo(() => {
+  const tableNamesForFilter = useMemo(() => {
     const names = new Set(data.map(event => event.table_name).filter(Boolean));
-    return Array.from(names) as string[];
+    return Array.from(names).map(name => ({ value: name as string, label: name as string }));
   }, [data]);
 
   const envBanner = !supabase ? (
@@ -74,19 +73,18 @@ export default function LogsPage() {
       <h1 className="text-3xl font-bold text-gray-800">Logs</h1>
       <p className="text-gray-600 mb-6">Auditoria de eventos do sistema.</p>
 
-      <GlassCard className="p-6">
-        {envBanner}
-        
-        <LogsFilters
-          value={pendingFilters}
-          onChange={setPendingFilters}
-          onSubmit={onSubmitFilters}
-          onClear={() => setPendingFilters(DEFAULT_FILTERS)}
-          isApplyDisabled={periodInvalid}
-          isApplying={isLoading}
-          tableNames={tableNames}
-        />
+      {envBanner}
+      
+      <LogsFilters
+        value={pendingFilters}
+        onChange={setPendingFilters}
+        onSubmit={onSubmitFilters}
+        onClear={onClearFilters}
+        tableOptions={tableNamesForFilter}
+        isLoading={isLoading}
+      />
 
+      <GlassCard className="p-0 overflow-hidden">
         {isLoading && data.length === 0 ? (
           <div className="flex justify-center items-center h-96">
             <Loader2 className="animate-spin text-blue-500" size={48} />
@@ -101,7 +99,7 @@ export default function LogsPage() {
           <LogsTable
             events={data}
             onShowDetails={setSelectedEvent}
-            onLoadMore={loadMore}
+            onLoadMore={() => { /* Implement loadMore in useLogsQuery if needed */ }}
             hasMore={hasMore}
             isLoadingMore={isLoadingMore}
           />

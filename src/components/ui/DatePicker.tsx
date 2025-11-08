@@ -1,20 +1,53 @@
-import React from 'react';
+"use client"
 
-interface DatePickerProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+import * as React from "react"
+import { format } from "date-fns"
+import { Calendar as CalendarIcon } from "lucide-react"
+import { ptBR } from 'date-fns/locale';
+
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+
+interface DatePickerProps {
+    label: string;
+    value: Date | null | undefined;
+    onChange: (date: Date | undefined) => void;
+    className?: string;
 }
 
-const DatePicker: React.FC<DatePickerProps> = ({ label, name, className, ...props }) => (
-  <div className={className}>
-    <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-    <input
-      id={name}
-      name={name}
-      type="datetime-local"
-      {...props}
-      className="w-full p-2 bg-white/80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm"
-    />
-  </div>
-);
-
-export default DatePicker;
+export default function DatePicker({ label, value, onChange, className }: DatePickerProps) {
+  return (
+    <div className={cn("grid gap-2", className)}>
+        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <Popover>
+        <PopoverTrigger asChild>
+            <Button
+            variant={"outline"}
+            className={cn(
+                "w-full justify-start text-left font-normal",
+                !value && "text-muted-foreground"
+            )}
+            >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {value ? format(value, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
+            </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+            <Calendar
+            mode="single"
+            selected={value || undefined}
+            onSelect={onChange}
+            initialFocus
+            locale={ptBR}
+            />
+        </PopoverContent>
+        </Popover>
+    </div>
+  )
+}

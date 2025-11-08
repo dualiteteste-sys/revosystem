@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import CompanySettingsForm from './company/CompanySettingsForm';
 import SubscriptionPage from '../../pages/billing/SubscriptionPage';
 import DataManagementContent from './data-management/DataManagementContent';
+import UsersPage from '@/pages/settings/users/UsersPage';
+import RolesPage from '@/pages/settings/roles/RolesPage';
 
 interface SettingsContentProps {
   activeItem: string;
@@ -13,6 +15,10 @@ const SettingsContent: React.FC<SettingsContentProps> = ({ activeItem }) => {
     switch (activeItem) {
       case 'Empresa':
         return <CompanySettingsForm />;
+      case 'Usuários':
+        return <UsersPage />;
+      case 'Papéis e Permissões':
+        return <RolesPage />;
       case 'Minha Assinatura':
         return <SubscriptionPage />;
       case 'Limpeza de Dados':
@@ -28,7 +34,7 @@ const SettingsContent: React.FC<SettingsContentProps> = ({ activeItem }) => {
   };
 
   return (
-    <main className="flex-1 bg-white/40 m-4 ml-0 rounded-2xl p-6 overflow-y-auto scrollbar-styled">
+    <main className="flex-1 bg-white/40 m-4 ml-0 rounded-2xl overflow-y-auto scrollbar-styled">
        <AnimatePresence mode="wait">
         <motion.div
           key={activeItem}
@@ -36,6 +42,7 @@ const SettingsContent: React.FC<SettingsContentProps> = ({ activeItem }) => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.2 }}
+          className="p-6 h-full"
         >
           {renderContent()}
         </motion.div>

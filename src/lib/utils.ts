@@ -1,3 +1,10 @@
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
 export function formatCurrency(amountInCents: number) {
   const amount = amountInCents / 100;
   return new Intl.NumberFormat('pt-BR', {

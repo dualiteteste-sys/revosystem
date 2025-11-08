@@ -4,7 +4,7 @@ import {
   Users2, Plug, UserSquare, Box, BarChart2, FileDown, ClipboardList,
   FileSignature, HeartHandshake, Store, Receipt, Truck, Percent,
   Bot, Undo2, ClipboardCheck, Banknote, Wallet, TrendingUp,
-  TrendingDown, Landmark, FileSpreadsheet, LogOut, Search, Building, Code
+  TrendingDown, Landmark, FileSpreadsheet, LogOut, Search, Building, Code, Database
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -91,8 +91,9 @@ export const menuConfig: { name: string; icon: React.ElementType; href: string; 
     gradient: 'from-emerald-500 to-emerald-600',
     children: [
         { name: 'Caixa', icon: Wallet, href: '#' },
-        { name: 'Contas a Receber', icon: TrendingUp, href: '#' },
-        { name: 'Contas a Pagar', icon: TrendingDown, href: '#' },
+        { name: 'Contas a Receber', icon: TrendingUp, href: '/app/financeiro/contas-a-receber' },
+        { name: 'Contas a Pagar', icon: TrendingDown, href: '/app/financeiro/contas-a-pagar' },
+        { name: 'Centro de Custos', icon: Landmark, href: '/app/financeiro/centros-de-custo' },
         { name: 'Cobranças Bancárias', icon: Landmark, href: '#' },
         { name: 'Extrato Bancário', icon: FileSpreadsheet, href: '#' },
         { name: 'Relatórios', icon: BarChart2, href: '#' },
@@ -115,6 +116,7 @@ export const menuConfig: { name: string; icon: React.ElementType; href: string; 
     gradient: 'from-purple-500 to-purple-600',
     children: [
       { name: 'Logs', icon: FileText, href: '/app/desenvolvedor/logs' },
+      { name: 'Supabase Demo', icon: Database, href: '/app/desenvolvedor/supabase-demo' },
     ],
   },
   {

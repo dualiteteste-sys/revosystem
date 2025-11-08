@@ -1,121 +1,97 @@
-import React, { useEffect, useState } from 'react';
-import type { LogsFilters as FiltersType } from './types';
-import { useDebounce } from '@/hooks/useDebounce';
+import React from 'react';
+import type { LogsFilters as LogsFiltersType } from './types';
+import { Button } from '@/components/ui/button';
 import DatePicker from '@/components/ui/DatePicker';
+import Select from '@/components/ui/forms/Select';
 import MultiSelect from '@/components/ui/MultiSelect';
 import Input from '@/components/ui/forms/Input';
 import { Loader2 } from 'lucide-react';
 
 type Props = {
-  value: FiltersType;
-  onChange: (next: FiltersType) => void;
+  value: LogsFiltersType;
+  onChange: (patch: Partial<LogsFiltersType>) => void;
   onSubmit: () => void;
   onClear: () => void;
-  isApplyDisabled?: boolean;
-  isApplying: boolean;
-  tableNames: string[];
+  tableOptions: { value: string; label: string }[];
+  isLoading: boolean;
 };
 
-const opOptions = [
+const SOURCE_OPTIONS = [
+  { value: 'ALL', label: 'Todos' },
+  { value: 'postgrest', label: 'API' },
+  { value: 'trigger', label: 'Gatilho (DB)' },
+  { value: 'func', label: 'Função (RPC)' },
+];
+
+const OP_OPTIONS = [
+  { value: 'ALL', label: 'Todos' },
   { value: 'INSERT', label: 'Criação' },
   { value: 'UPDATE', label: 'Atualização' },
   { value: 'DELETE', label: 'Exclusão' },
   { value: 'SELECT', label: 'Leitura' },
 ];
 
-const sourceOptions = [
-  { value: 'postgrest', label: 'API' },
-  { value: 'trigger', label: 'Gatilho (DB)' },
-  { value: 'func', label: 'Função (RPC)' },
-];
-
-function toLocalInputValue(d?: Date | null) {
-  if (!d) return '';
-  try {
-    const date = new Date(d);
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    return date.toISOString().slice(0, 16);
-  } catch {
-    return '';
-  }
-}
-
-export function LogsFilters({ value, onChange, onSubmit, onClear, isApplyDisabled, isApplying, tableNames }: Props) {
-  const [qLocal, setQLocal] = useState(value.q ?? '');
-  const debouncedQ = useDebounce(qLocal, 500);
-
-  useEffect(() => {
-    setQLocal(value.q ?? '');
-  }, [value.q]);
-
-  useEffect(() => {
-    onChange({ ...value, q: debouncedQ.slice(0, 256) });
-  }, [debouncedQ]);
-
-  const handleDateChange = (key: 'from' | 'to', dateStr: string) => {
-    const date = dateStr ? new Date(dateStr) : null;
-    onChange({ ...value, [key]: date });
+export function LogsFilters({ value, onChange, onSubmit, onClear, tableOptions, isLoading }: Props) {
+  const handleSingleSelectChange = (field: 'source' | 'op', selectedValue: string) => {
+    onChange({ [field]: selectedValue === 'ALL' ? ['ALL'] : [selectedValue] });
   };
 
-  const tableOptions = tableNames.map(name => ({ value: name, label: name }));
-
   return (
-    <div className="p-4 bg-white/60 rounded-xl border border-gray-200 mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-3 gap-4 items-end">
-        <DatePicker
-          label="De"
-          value={toLocalInputValue(value.from)}
-          onChange={(e) => handleDateChange('from', e.target.value)}
-        />
-        <DatePicker
-          label="Até"
-          value={toLocalInputValue(value.to)}
-          onChange={(e) => handleDateChange('to', e.target.value)}
-        />
-        <Input
-          label="Busca textual"
-          value={qLocal}
-          onChange={(e) => setQLocal(e.target.value)}
-          placeholder="Buscar em dados..."
-        />
-        <MultiSelect
-          label="Origem"
-          options={sourceOptions}
-          selected={value.source || []}
-          onChange={(selected) => onChange({ ...value, source: selected })}
-        />
-        <MultiSelect
-          label="Operação"
-          options={opOptions}
-          selected={value.op || []}
-          onChange={(selected) => onChange({ ...value, op: selected })}
-        />
-        <MultiSelect
-          label="Tabela"
-          options={tableOptions}
-          selected={value.table || []}
-          onChange={(selected) => onChange({ ...value, table: selected })}
-        />
-      </div>
-      <hr className="my-4 border-gray-200" />
-      <div className="flex items-center gap-2 justify-end">
-        <button
-          type="button"
-          onClick={onClear}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-        >
+    <div className="flex flex-wrap items-end gap-4 p-4 border bg-gray-50/50 rounded-xl mb-6">
+      <DatePicker
+        label="Data de Início"
+        value={value.from}
+        onChange={(date) => onChange({ from: date })}
+        className="flex-grow min-w-[200px]"
+      />
+      <DatePicker
+        label="Data de Fim"
+        value={value.to}
+        onChange={(date) => onChange({ to: date })}
+        className="flex-grow min-w-[200px]"
+      />
+      <Select
+        label="Origem"
+        value={value.source?.[0] || 'ALL'}
+        onChange={(e) => handleSingleSelectChange('source', e.target.value)}
+        className="flex-grow min-w-[180px]"
+      >
+        {SOURCE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+      </Select>
+      <Select
+        label="Operação"
+        value={value.op?.[0] || 'ALL'}
+        onChange={(e) => handleSingleSelectChange('op', e.target.value as any)}
+        className="flex-grow min-w-[180px]"
+      >
+        {OP_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+      </Select>
+      <MultiSelect
+        label="Tabelas"
+        options={tableOptions}
+        selected={value.table || []}
+        onChange={(tables) => onChange({ table: tables })}
+        placeholder="Selecionar tabelas"
+        className="flex-grow min-w-[220px]"
+      />
+      <Input
+        label="Busca"
+        value={value.q || ''}
+        onChange={(e) => onChange({ q: e.target.value })}
+        placeholder="PK, diff, meta..."
+        className="flex-grow min-w-[200px]"
+      />
+      <div className="flex gap-2">
+        <Button onClick={onSubmit} disabled={isLoading}>
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Filtrar
+        </Button>
+        <Button variant="outline" onClick={onClear} disabled={isLoading}>
           Limpar
-        </button>
-        <button
-          type="button"
-          onClick={onSubmit}
-          disabled={isApplyDisabled || isApplying}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isApplying ? <Loader2 className="animate-spin" size={16} /> : null}
-          Aplicar Filtros
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
+
+export default LogsFilters;

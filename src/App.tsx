@@ -19,6 +19,12 @@ import CepSearchPage from './pages/tools/CepSearchPage';
 import CnpjSearchPage from './pages/tools/CnpjSearchPage';
 import NfeInputPage from './pages/tools/NfeInputPage';
 import LogsPage from './pages/dev/LogsPage';
+import SupabaseDemoPage from './pages/tools/SupabaseDemoPage';
+import ContasPagarPage from './pages/financeiro/ContasPagarPage';
+import ContasAReceberPage from './pages/financeiro/ContasAReceberPage';
+import CentrosDeCustoPage from './pages/financeiro/CentrosDeCustoPage';
+import UsersPage from './pages/settings/users/UsersPage';
+import RolesPage from './pages/settings/roles/RolesPage';
 
 const App = () => {
   return (
@@ -46,10 +52,16 @@ const App = () => {
         <Route path="carriers" element={<CarriersPage />} />
         <Route path="services" element={<ServicesPage />} />
         <Route path="ordens-de-servico" element={<OsPage />} />
+        <Route path="financeiro/contas-a-pagar" element={<ContasPagarPage />} />
+        <Route path="financeiro/contas-a-receber" element={<ContasAReceberPage />} />
+        <Route path="financeiro/centros-de-custo" element={<CentrosDeCustoPage />} />
         <Route path="cep-search" element={<CepSearchPage />} />
         <Route path="cnpj-search" element={<CnpjSearchPage />} />
         <Route path="nfe-input" element={<NfeInputPage />} />
         <Route path="desenvolvedor/logs" element={<LogsPage />} />
+        <Route path="desenvolvedor/supabase-demo" element={<SupabaseDemoPage />} />
+        <Route path="configuracoes/geral/usuarios" element={<UsersPage />} />
+        <Route path="configuracoes/geral/papeis" element={<RolesPage />} />
         
         <Route path="billing/success" element={<BillingSuccessPage />} />
         <Route path="billing/cancel" element={<BillingCancelPage />} />
