@@ -1,14 +1,12 @@
 import React from 'react';
 import { EmpresaUser } from './types';
-import { MoreVertical, Loader2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
+import { useCan } from '@/hooks/useCan';
 
 type Props = {
   rows: EmpresaUser[];
   onEditRole: (u: EmpresaUser) => void;
-  onDanger: (u: EmpresaUser) => void;
-  onLoadMore: () => void;
-  isLoadingMore?: boolean;
-  hasMore: boolean;
+  onDeleteInvite: (u: EmpresaUser) => void;
 };
 
 const roleLabels: Record<EmpresaUser['role'], string> = {
@@ -25,7 +23,9 @@ const statusConfig: Record<EmpresaUser['status'], { label: string; color: string
   INACTIVE: { label: 'Inativo', color: 'bg-gray-100 text-gray-800' },
 };
 
-export function UsersTable({ rows, onEditRole, onDanger, onLoadMore, isLoadingMore, hasMore }: Props) {
+export function UsersTable({ rows, onEditRole, onDeleteInvite }: Props) {
+  const canManage = useCan('usuarios', 'manage');
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="overflow-x-auto">
@@ -56,27 +56,21 @@ export function UsersTable({ rows, onEditRole, onDanger, onLoadMore, isLoadingMo
                   {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString('pt-BR') : 'Nunca'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button onClick={() => onEditRole(user)} className="text-indigo-600 hover:text-indigo-900">
-                    Gerenciar
-                  </button>
+                  {user.status === 'PENDING' && canManage ? (
+                    <button onClick={() => onDeleteInvite(user)} className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-100" title="Excluir convite">
+                      <Trash2 size={18} />
+                    </button>
+                  ) : (
+                    <button onClick={() => onEditRole(user)} className="text-indigo-600 hover:text-indigo-900">
+                      Gerenciar
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {hasMore && (
-        <div className="p-4 text-center">
-          <button
-            onClick={onLoadMore}
-            disabled={isLoadingMore}
-            className="flex items-center justify-center gap-2 mx-auto px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 disabled:opacity-50"
-          >
-            {isLoadingMore ? <Loader2 className="animate-spin" size={16} /> : null}
-            Carregar mais
-          </button>
-        </div>
-      )}
     </div>
   );
 }

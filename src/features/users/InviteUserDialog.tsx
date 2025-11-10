@@ -1,96 +1,118 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import Input from '@/components/ui/forms/Input';
-import Select from '@/components/ui/forms/Select';
-import { UserRole } from './types';
-import { useToast } from '@/contexts/ToastProvider';
-import { useSupabase } from '@/providers/SupabaseProvider';
-import { Loader2 } from 'lucide-react';
+import * as React from "react";
+import { z } from "zod";
+import { Loader2, UserPlus } from "lucide-react";
+import { inviteUser } from "@/services/users";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import Input from "@/components/ui/forms/Input";
+import Select from "@/components/ui/forms/Select";
+import { useToast } from "@/contexts/ToastProvider";
+import { EmpresaUser } from "./types";
+
+const schema = z.object({
+  email: z.string().email({ message: "Formato de e-mail inválido." }),
+  role: z.string().min(1, { message: "Selecione um papel." }),
+});
 
 type Props = {
-  open: boolean;
   onClose: () => void;
-  onInvited: (email: string, role: UserRole) => void;
+  onOptimisticInsert?: (row: EmpresaUser) => void;
 };
 
-const roleOptions: { value: UserRole, label: string }[] = [
-  { value: 'ADMIN', label: 'Admin' },
-  { value: 'FINANCE', label: 'Financeiro' },
-  { value: 'OPS', label: 'Operações' },
-  { value: 'READONLY', label: 'Somente Leitura' },
-];
-
-export function InviteUserDialog({ open, onClose, onInvited }: Props) {
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState<UserRole>('ADMIN');
-  const [loading, setLoading] = useState(false);
+export function InviteUserDialog({ onClose, onOptimisticInsert }: Props) {
   const { addToast } = useToast();
-  const supabase = useSupabase();
+  const [email, setEmail] = React.useState("");
+  const [role, setRole] = React.useState("READONLY");
+  const [loading, setLoading] = React.useState(false);
+  const [errors, setErrors] = React.useState<{ email?: string; role?: string }>({});
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.includes('@')) {
-      addToast('Por favor, insira um e-mail válido.', 'error');
+    setErrors({});
+
+    const parsed = schema.safeParse({ email, role });
+    if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      setErrors({
+        email: fieldErrors.email?.[0],
+        role: fieldErrors.role?.[0],
+      });
       return;
     }
-    setLoading(true);
-    console.log('[FORM] InviteUserDialog submit', { email, role });
 
+    setLoading(true);
     try {
-      if (!supabase) { // Modo Demo
-        console.warn('[RPC] invite_user_to_current_empresa (DEMO)');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      } else {
-        console.log('[RPC] invite_user_to_current_empresa', { p_email: email, p_role: role });
-        const { error } = await supabase.rpc('invite_user_to_current_empresa', { p_email: email, p_role: role });
-        if (error) throw error;
+      const res = await inviteUser(email, role);
+
+      if (!res.ok) {
+        addToast(res.error ?? "Erro desconhecido ao convidar usuário.", "error", "Falha no Convite");
+        return;
       }
-      addToast(`Convite enviado para ${email}`, 'success');
-      onInvited(email, role);
+
+      addToast(`Convite enviado com sucesso para ${res.email}.`, "success", "Convite Enviado");
+
+      if (res.linkResult?.user_id && onOptimisticInsert) {
+        onOptimisticInsert({
+          user_id: res.linkResult.user_id,
+          email: res.email,
+          name: null,
+          role: res.role as any,
+          status: "PENDING",
+          invited_at: new Date().toISOString(),
+        });
+      }
+
       onClose();
-      setEmail('');
-      setRole('ADMIN');
     } catch (err: any) {
-      addToast(err.message, 'error');
+      addToast(err?.message ?? String(err), "error", "Erro Inesperado");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Convidar Novo Usuário</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-          <Input
-            label="Email do usuário"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="colega@suaempresa.com"
-            required
-          />
-          <Select
-            label="Papel inicial"
-            name="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as UserRole)}
-          >
-            {roleOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-          </Select>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Enviar Convite
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <form onSubmit={onSubmit} className="space-y-4 pt-4">
+      <Input
+        label="E-mail"
+        id="email"
+        type="email"
+        placeholder="email@empresa.com"
+        autoComplete="off"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        error={errors.email}
+      />
+
+      <div>
+        <Select label="Papel" id="role" value={role} onChange={(e) => setRole(e.target.value)}>
+          <option value="READONLY">Leitura</option>
+          <option value="OPS">Operações</option>
+          <option value="FINANCE">Financeiro</option>
+          <option value="ADMIN">Admin</option>
+          <option value="OWNER">Owner</option>
+        </Select>
+        {errors.role && <p className="text-sm text-red-600 mt-1">{errors.role}</p>}
+      </div>
+
+      <div className="flex gap-2 justify-end pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          aria-label="Cancelar convite"
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          className={cn(loading && "opacity-90")}
+          disabled={loading}
+          aria-label="Confirmar envio do convite"
+        >
+          {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</>) : "Enviar convite"}
+        </Button>
+      </div>
+    </form>
   );
 }

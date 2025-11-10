@@ -10,7 +10,7 @@ type State = {
   isError: boolean;
   errorMsg?: string;
   isLoadingMore: boolean;
-  cursorAfter: string | null; // updated_at of the last item
+  cursorAfter: string | null; // invited_at (created_at) of the last item
 };
 
 const DEFAULT_LIMIT = 20;
@@ -66,7 +66,7 @@ export function useUsersQuery(initialFilters: UsersFilters = {}) {
       if (error) throw error;
 
       const rows = (data ?? []) as EmpresaUser[];
-      const nextCursor = rows.length === params.p_limit ? rows[rows.length - 1]?.updated_at : null;
+      const nextCursor = rows.length === params.p_limit ? rows[rows.length - 1]?.invited_at : null;
 
       setState(s => ({ ...s, isLoading: false, data: rows, cursorAfter: nextCursor }));
     } catch (e: any) {
@@ -88,7 +88,7 @@ export function useUsersQuery(initialFilters: UsersFilters = {}) {
       if (error) throw error;
 
       const newRows = (data ?? []) as EmpresaUser[];
-      const nextCursor = newRows.length === params.p_limit ? newRows[newRows.length - 1]?.updated_at : null;
+      const nextCursor = newRows.length === params.p_limit ? newRows[newRows.length - 1]?.invited_at : null;
 
       setState(s => ({
         ...s,
